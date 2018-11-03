@@ -1,0 +1,4 @@
+/asset-*
+/config.json
+/schedule.json
+*.pyc
