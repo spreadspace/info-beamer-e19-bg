@@ -1,8 +1,8 @@
 {
     "name": "Elevate 2019 Background",
     "options": [{
-        "title": "Background Style",
-        "ui_width": 12,
+        "title": "Style",
+        "ui_width": 8,
         "name": "style",
         "hint": "Background animation style",
         "type": "select",

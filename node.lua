@@ -1,16 +1,16 @@
-NATIVE_WIDTH = NATIVE_WIDTH or 1920
-NATIVE_HEIGHT = NATIVE_HEIGHT or 1080
+util.init_hosted()
 
-sys.set_flag("no_clear")
-
+-- this is only supported on the Raspi....
 --util.noglobals()
+
+node.set_flag("no_clear")
+
+gl.setup(NATIVE_WIDTH, NATIVE_HEIGHT)
+
 local res = util.auto_loader()
 local fancy = require"fancy"
 fancy.res = res
 
-
-gl.setup(NATIVE_WIDTH, NATIVE_HEIGHT)
-
 function node.render()
-    fancy.render("fancy")
+   fancy.render(CONFIG.style)
 end
