@@ -1,4 +1,15 @@
 {
     "name": "Elevate 2019 Background",
-    "options": []
+    "options": [{
+        "title": "Background Style",
+        "ui_width": 12,
+        "name": "style",
+        "hint": "Background animation style",
+        "type": "select",
+        "options": [
+            ["static", "static background (no animation)"],
+            ["minimal", "minimal animation (needs minimal GPU power)"],
+            ["fancy", "fancy animation (needs lots of GPU power)"]
+        ]
+    }]
 }
