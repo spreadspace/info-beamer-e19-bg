@@ -16,6 +16,16 @@ local QMOVESCALE = 0.20
 local QROTSPEED = 1.0
 
 
+local effect
+
+util.file_watch("fancy_effect.lua", function(content)
+    print("Reload fancy_effect.lua...")
+    local x = assert(loadstring(content, "fancy_effect.lua"))()
+    effect = x
+end)
+
+
+
 local fancy = {}
 
 ----------------------------------------------
@@ -88,7 +98,7 @@ function fancy.render(mode, aspect)
         if fancy.fixaspect then
             fancy.fixaspect(aspect)
         end
-        -- TODO: draw fancy animation
+        effect.draw(now, res)
     end
 
     if mode == "fancy" or mode == "minimal" then
