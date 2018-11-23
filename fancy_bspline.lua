@@ -134,7 +134,7 @@ function B:eval1d(t)
     local knots = self._knots
     local r = findKnotIndex(knots, t, self._numknots)
     local d = self._degree
-    local xs = self._xs
+    local xs = self[1]
     if r < d then
         r = d
     end
@@ -163,8 +163,8 @@ function B:eval2d(t)
     local knots = self._knots
     local r = findKnotIndex(knots, t, self._numknots)
     local d = self._degree
-    local xs = self._xs
-    local ys = self._ys
+    local xs = self[1]
+    local ys = self[2]
     if r < d then
         r = d
     end
@@ -196,15 +196,16 @@ function B:eval3d(t)
     local knots = self._knots
     local r = findKnotIndex(knots, t, self._numknots)
     local d = self._degree
-    local xs = self._xs
-    local ys = self._ys
-    local zs = self._zs
+    local xs = self[1]
+    local ys = self[2]
+    local zs = self[3]
     if r < d then
         r = d
     end
     local k = d + 1
     local xwork = xwork
     local ywork = ywork
+    local zwork = zwork
     for i = 0, d do
         local tt = r - d + i
         xwork[i] = xs[tt]
@@ -231,49 +232,61 @@ function B:eval3d(t)
     return xwork[0], ywork[0], zwork[0]
 end
 
-local bmeta1d = { __index = B, __call = B.eval1d }
-local bmeta2d = { __index = B, __call = B.eval2d }
-local bmeta3d = { __index = B, __call = B.eval3d }
-
-function B.new1d(xs, degree, ty, ...)
-    local len = #xs
-    degree = degree or 3
-    local knots, numknots = generateKnotVector(len, degree, ty, ...)
-    assert(knots, "bspline-1D::generateKnotVector() failed. len: " .. len)
-    local x = {}
-    for i = 1, len do -- convert to 0-based indexing (makes things above easier)
-        x[i-1] = xs[i]
-    end
-    return setmetatable({ _knots = knots, _numknots = numknots, _degree = degree, _xs = x,  }, bmeta1d)
+function B:len()
+    return self.n
 end
 
-function B.new2d(xs, ys, degree, ty, ...)
-    local len = #xs
-    assert(len == #ys)
-    degree = degree or 3
-    local knots, numknots = generateKnotVector(len, degree, ty, ...)
-    assert(knots, "bspline-2D::generateKnotVector() failed. len: " .. len)
-    local x, y = {}, {}
-    for i = 1, len do
-        x[i-1] = xs[i]
-        y[i-1] = ys[i]
-    end
-    return setmetatable({ _knots = knots, _numknots = numknots, _degree = degree, _xs = x, _ys = y,  }, bmeta2d)
+local bmeta = {}
+for i = 1, 3 do
+    bmeta[i] = { __index = B, __call = assert(B["eval" .. i .. "d"]), __len = B.len }
 end
 
-function B.new3d(xs, ys, zs, degree, ty, ...)
-    local len = #xs
-    assert(len == #ys and len == #zs)
+
+function B.new(dim, len, degree, ty, ...)
     degree = degree or 3
     local knots, numknots = generateKnotVector(len, degree, ty, ...)
-    assert(knots, "bspline-3D::generateKnotVector() failed. len:" .. len)
-    local x, y, z = {}, {}, {}
-    for i = 1, len do
-        x[i-1] = xs[i]
-        y[i-1] = ys[i]
-        z[i-1] = zs[i]
+    assert(knots, "bspline::generateKnotVector() failed. len: " .. len)
+    local mt = assert(bmeta[dim])
+    local self = { _dim = dim, _knots = knots, _numknots = numknots, _degree = degree, n = len }
+    for i = 1, dim do
+        self[i] = {}
     end
-    return setmetatable({ _knots = knots, _numknots = numknots, _degree = degree, _xs = x, _ys = y, _zs = z  }, bmeta3d)
+    return setmetatable(self, mt)
+end
+
+-- convert to 0-based indexing (makes the math easier)
+local function _shift0(dst, src, len)
+    assert(len == #src)
+    for i = 1, len do
+        dst[i-1] = src[i]
+    end
+    return dst
+end
+
+-- functions for creating static bsplines whose control points don't change
+
+function B.new1d(xs, ...)
+    local len = #xs
+    local self = B.new(1, len, ...)
+    _shift0(self[1], xs, len)
+    return self
+end
+
+function B.new2d(xs, ys, ...)
+    local len = #xs
+    local self = B.new(2, len, ...)
+    _shift0(self[1], xs, len)
+    _shift0(self[2], ys, len)
+    return self
+end
+
+function B.new3d(xs, ys, zs, ...)
+    local len = #xs
+    local self = B.new(3, len, ...)
+    _shift0(self[1], xs, len)
+    _shift0(self[2], ys, len)
+    _shift0(self[3], zs, len)
+    return self
 end
 
 --rawset(_G, "bspline", B)

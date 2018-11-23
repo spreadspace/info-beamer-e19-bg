@@ -22,14 +22,16 @@ local function chaos(t)
   return (exp(sin(t*0.22))*exp(cos(t*0.39))*sin(t*0.3))
 end
 
+local _bs = bspline.new(3, 1000)
 local function makespline(now)
-    for i = 1, 10 do
+    local xs, ys, zs = unpack(_bs)
+    for i = 0, _bs.n-1 do
         local t = now + i
         xs[i] = chaos(t)
         ys[i] = chaos(t + 3)
         zs[i] = chaos(t + 6)
     end
-    return bspline.new3d(xs, ys, zs)
+    return _bs
 end
 
 local function quad1(tex, ...)
@@ -87,8 +89,8 @@ function eff.draw(now, res)
     gl.scale(0.5, 0.5, 0.5)
 
 
-    local bs = makespline(now)
-    local vert = eval(bs, 0.01)
+    local bs = makespline(now*8)
+    local vert = eval(bs, 0.0001)
     black:drawverts("L", vert, uv)
 
 
