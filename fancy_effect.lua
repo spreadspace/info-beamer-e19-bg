@@ -16,8 +16,6 @@ local bspline = require"fancy_bspline"
 
 local black = resource.create_colored_texture(0, 0, 0, 1)
 
-local xs, ys, zs = {}, {}, {}
-
 local function chaos(t)
   return (exp(sin(t*0.22))*exp(cos(t*0.39))*sin(t*0.3))
 end
@@ -56,16 +54,27 @@ local uv = {
     0, 1,
 }
 
-local function eval(bs, step)
-    local r = {}
+local POINTS = 10000
+local VERT = {}
+for i = 1, POINTS*4 do
+    VERT[i] = 1.0
+end
+
+-- evaluate
+local function eval(bs)
+    bs:sample3d(POINTS, VERT,VERT,VERT, 1,2,3,  4,4,4)
+
+    -- OLD, SLOW METHOD
+    --[[local step = 1.0 / points
     local i = 1
     for t = 0, 1, step do
         local x, y, z = bs(t)
         r[i], r[i+1], r[i+2] = bs(t)
         r[i+3] = 1.0
         i = i + 4
-    end
-    return r
+    end]]
+
+    return VERT
 end
 
 local texcoord = {}
@@ -90,7 +99,7 @@ function eff.draw(now, res)
 
 
     local bs = makespline(now*8)
-    local vert = eval(bs, 0.0001)
+    local vert = eval(bs)
     black:drawverts("L", vert, uv)
 
 

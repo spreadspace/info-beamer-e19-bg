@@ -6,6 +6,7 @@
 --  for i=0, m-1 do ... end
 
 local floor = math.floor
+local min = math.min
 
 local PARAMETERIZATION_CUSTOM = -1
 local PARAMETERIZATION_UNIFORM = 0
@@ -44,7 +45,7 @@ local function findKnotIndex(knots, t, num)
     if i >= num then
         return num-1
     end
-    -- is is index of first element not less than t, go one back to get the one strictly less than t
+    -- i is index of first element not less than t, go one back to get the one strictly less than t
     if knots[i] > 0 then
         i = i - 1
     end
@@ -131,6 +132,7 @@ local ywork = {}
 local zwork = {}
 
 function B:eval1d(t)
+    t = min(t, 0.9999999)
     local knots = self._knots
     local r = findKnotIndex(knots, t, self._numknots)
     local d = self._degree
@@ -160,6 +162,7 @@ function B:eval1d(t)
 end
 
 function B:eval2d(t)
+    t = min(t, 0.9999999)
     local knots = self._knots
     local r = findKnotIndex(knots, t, self._numknots)
     local d = self._degree
@@ -193,6 +196,7 @@ function B:eval2d(t)
 end
 
 function B:eval3d(t)
+    t = min(t, 0.9999999)
     local knots = self._knots
     local r = findKnotIndex(knots, t, self._numknots)
     local d = self._degree
@@ -230,6 +234,58 @@ function B:eval3d(t)
         worksize = worksize - 1
     end
     return xwork[0], ywork[0], zwork[0]
+end
+
+function B:sample3d(points, dstx, dsty, dstz, startx, starty, startz, stridex, stridey, stridez)
+    local knots = self._knots
+    local r = 1
+    local d = self._degree
+    local xs = self[1]
+    local ys = self[2]
+    local zs = self[3]
+    if r < d then
+        r = d
+    end
+    local k = d + 1
+    local xwork = xwork
+    local ywork = ywork
+    local zwork = zwork
+    local t = 0
+    local step =  1.0 / (points - 1)-- make sure we reach 1.0 in the end
+
+    for p = 1, points do
+        t = min(t, 0.9999999) -- make sure float inaccuracy doesn't bump this past 1.0
+        while knots[r+1] < t do -- make it so that knots[r] < t (strictly less than)
+            r = r + 1
+        end
+        for i = 0, d do
+            local tt = r - d + i
+            xwork[i] = xs[tt]
+            ywork[i] = ys[tt]
+            zwork[i] = zs[tt]
+        end
+
+        local worksize = k
+        while worksize > 1 do
+            local j = k - worksize + 1 -- iteration number, starting with 1, going up to k
+            local tmp = r - k + 1 + j
+            for w = 0, worksize-2 do
+                local i = w + tmp
+                local ki = knots[i]
+                local a = (t - ki) / (knots[i+k-j] - ki)
+                local a1 = 1-a
+                local w1 = w+1
+                xwork[w] = xwork[w] * (a1) + xwork[w1] * a
+                ywork[w] = ywork[w] * (a1) + ywork[w1] * a
+                zwork[w] = zwork[w] * (a1) + zwork[w1] * a
+            end
+            worksize = worksize - 1
+        end
+        dstx[startx], dsty[starty], dstz[startz] = xwork[0], ywork[0], zwork[0]
+        startx, starty, startz = startx + stridex, starty + stridey, startz + stridez
+
+        t = t + step
+    end
 end
 
 function B:len()
@@ -294,8 +350,8 @@ end
 
 -- test code
 --[[
-dofile("table.lua")
-debugLog = print
+--dofile("table.lua")
+--debugLog = print
 local xs = {-5, -1, 1, 5, 7}
 local ys = {-5, 5, -5, 5, 0}
 local s = B.new2d(xs, ys)
@@ -318,6 +374,32 @@ print(s(0.0))
 print(s(0.1))
 print(s(0.9))
 print(s(1.0))
+]]
+
+--[[
+local xs = {-5, -1, 1, 5, 7}
+local ys = {-5, 5, -5, 5, 0}
+local s = B.new3d(xs, ys, ys)
+
+for i, k in pairs(s._knots) do
+    print(i, k)
+end
+print("==")
+local t = 0
+local N = 10
+local step = 1.0 / (N - 1)
+for i = 1, 10 do
+    print(i, s(t))
+    t = t + step
+end
+
+print("-------------")
+local xx, yy, zz = {}, {}, {}
+s:sample3d(N, xx,yy,zz, 1,1,1,  1,1,1)
+for i = 1, #xx do
+    print(i, xx[i], yy[i], zz[i])
+end
+print("-------------")
 ]]
 
 return B
